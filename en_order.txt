@@ -1,0 +1,76 @@
+﻿AC8 UGBL Replacement Mod Installer
+Ace Combat 8  -  UGBL Replacement Mod
+Install  Enhanced
+Install  Standard
+Restore game
+What this mod changes
+Game not found: this folder must sit in the game root directory (the folder that contains the Game folder).
+ The interface can be previewed now; clicking the buttons will not change anything.
+Game folder found. After installing, just press Play in Steam; no Steam settings need changing.
+[Enhanced version]
+  - Standard missile (MSL) model replaced with the UGBL guided bomb
+  - Damage 40 -> 90, blast radius 0 -> 182 m
+  - On top of the above, the full missile performance enhancement is applied:
+      Speed 1083 -> 1458 m/s, acceleration raised as well
+      Proportional navigation with lead prediction for tighter tracking
+      Lock cone 32.5 deg -> 160 deg, max turn angle 40 deg -> 150 deg
+      Lock range 2000 -> 2400 m, lock acceleration time 1.0 -> 2.75 s
+      Proximity fuze enabled, blast radius 50 m, splash damage 30
+      Lifetime 9 -> 15 s, self-destruct after lock loss, lock decay inside clouds
+[Standard version]
+  - Only three changes: model swap, damage 40 -> 90, blast radius 0 -> 182 m
+  - Speed, guidance, lock cone and range, proximity fuze and lifetime stay vanilla
+[Installation (fully automatic, no Steam setting changes)]
+  - Clean game: installs the mod runtime and takes over the game launcher
+  - Existing mod runtime: only this mod's files are added, the launcher is taken over the same way
+  - Mouse-flight integrated package detected: installs as its add-on mod, sharing its launch method,
+    and its built-in missile enhancement is switched to "mouse flight only" to avoid editing the same data
+  - Takeover: replaces start_protected_game.exe in the game root with an offline launcher,
+    the original file is kept as a backup and restored exactly later; Steam launch options stay unchanged
+  - Restore reverts each item according to what was recorded during installation
+  - Offline single-player only; do not use in online or multiplayer modes
+- Mouse-flight integrated package detected:
+  Will be installed as an add-on mod: files only go into its ue4ss-mods folder,
+  no runtime is installed and the launcher is not replaced; it keeps its own entry point.
+  Its missile enhancement is currently enabled and edits the same data as this mod.
+  It will be switched to "mouse flight only" during installation, and switched back when you restore.
+- Does not change any Steam settings (launch options stay as they are).
+- A mod runtime (UE4SS) already exists in the game folder, possibly from another mod.
+  Only this mod's files are added; the other mod is not overwritten.
+- No other mod environment found; the mod runtime will be installed as well.
+- Will take over game start: replaces 
+ with an offline launcher,
+  the original file is kept as a backup and put back exactly when you press Restore.
+  After that just press Play in Steam; no other steps needed.
+Game not found: put this folder into the game root directory and try again.
+Please close the game before installing. Installation replaces the launcher, which cannot be done while the game is running.
+About to install: 
+Enhanced
+Standard
+Continue?
+Confirm before installing
+Cancelled; nothing was changed.
+Install failed: missing payload\\
+Install failed: missing runtime payload\\runtime
+Mod files were copied, but replacing the launcher failed: 
+. The game still starts normally from Steam, but the mod will not take effect.
+Installed: 
+From now on, launch from Steam the same way the integrated package does.
+From now on just press Play in Steam.
+Install failed: 
+Please close the game before restoring.
+add-on mod
+ + missile enhancement settings
+missile enhancement settings
+ + launcher
+launcher
+ + mod files
+mod files
+ + runtime
+runtime
+Restored: 
+Removed
+Nothing to remove.
+(launcher restore failed: 
+Restore failed: 
+missing payload\\launcher\\start_protected_game.exe
