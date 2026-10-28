@@ -292,7 +292,17 @@ function M.install_hooks(log)
         if log then log('VISUALS hook-unavailable') end
         return
     end
-    -- One missile actor: mesh + explosion references, both on the instance.
+    local function comp_mesh_name(owner, field)
+    local okC, comp = pcall(function() return owner[field] end)
+    if not (okC and valid(comp)) then return '-' end
+    local okM, m = pcall(function() return comp.StaticMesh end)
+    if okM and valid(m) then
+        local n = name_of(m)
+        if n then return leaf_of(n) end
+    end
+    return '?'
+end
+-- One missile actor: mesh + explosion references, both on the instance.
     local function on_actor(actor)
         if not valid(actor) then return end
         local full = name_of(actor)
@@ -310,6 +320,8 @@ function M.install_hooks(log)
             actorLogs = actorLogs + 1
             if log then
                 log('VISUALS actor ' .. leaf .. ' changed=' .. tostring(changed)
+                    .. ' mesh=' .. tostring(comp_mesh_name(actor, 'StaticMesh'))
+                    .. ' hidden=' .. tostring(comp_mesh_name(actor, 'HiddenMissileMesh'))
                     .. ' effect_changed=' .. tostring(okE and ce or 'ERR'))
             end
         end
