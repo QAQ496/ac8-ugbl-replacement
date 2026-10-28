@@ -62,7 +62,7 @@ end
 
 local okg, reason = guard.check()
 if not okg then log('DISABLED ' .. tostring(reason)); return end
-log('guard=offline-ok stage=1 build=1.1')
+log('guard=offline-ok stage=1 build=1.2 variant=' .. tostring(cfg.variant))
 if not okWeapons then log('WARN weapons module failed to load: ' .. tostring(weapons)) end
 if not okVisuals then log('WARN visuals module failed to load: ' .. tostring(visuals)) end
 if cfg.apply_visuals and visuals ~= nil then pcall(visuals.install_hooks, log) end

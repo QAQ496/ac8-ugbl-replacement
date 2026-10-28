@@ -334,7 +334,7 @@ function M.apply(log)
     if log then
         log('WEAPONS APPLIED verified=' .. result.verified .. ' written=' .. result.written ..
             ' overridden=' .. result.overridden .. ' added=' .. result.added ..
-            ' vfx_changed=' .. tostring(result.visuals) .. '/' .. tostring(result.visualsChecked) ..
+            ' vfx_fields=' .. tostring(result.visuals) .. '/' .. tostring(result.visualsChecked) ..
             (result.visualsError and (' vfx_warn=' .. tostring(result.visualsError)) or ''))
     end
     return result
