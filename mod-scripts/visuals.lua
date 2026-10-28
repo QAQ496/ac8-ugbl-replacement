@@ -28,8 +28,30 @@ local MSL_PATHS = {
     '/Game/Blueprints/Weapons/MSL/Player/Msl/BP_plwp_msl_f0',
 }
 
--- Components that carry the visible missile body.
-local COMPONENT_FIELDS = { 'StaticMesh', 'HiddenMissileMesh' }
+-- v1.1: cover every MSL blueprint variant, not only the five measured first.
+-- Different aircraft can use a different MSL visual variant (user reports:
+-- F/A-18C and Mirage 2000-5 changed, Su-33 / Su-47 did not), so after the known
+-- list we probe a set of extra suffixes once per session and patch whatever
+-- loads, and instance matching is done on the class name instead of a fixed list.
+local EXTRA_SUFFIXES = {
+    'a1', 'b0', 'b1', 'c0', 'c1', 'c2', 'd0', 'd1', 'e0', 'e1', 'g0', 'g1',
+    'h0', 'h1', 'i0', 'i1', 'k0', 'k1', 'l0', 'l1', 'm0', 'm1', 'n0', 'n1',
+    'o0', 'o1', 'p0', 'p1', 'q0', 'q1', 'r1', 'r2', 's0', 's1', 't0', 't1',
+    'u0', 'u1', 'v0', 'v1', 'w0', 'w1', 'x0', 'x1', 'y0', 'y1', 'z0', 'z1',
+    '00', '01', '02', '03', '04', '05', '06', '07', '08', '09',
+}
+
+local extra_tried = false
+local extra_classes = {}
+
+local function is_msl_leaf(leaf)
+    if type(leaf) ~= 'string' then return false end
+    return leaf:lower():find('msl', 1, true) ~= nil
+end
+
+-- Components that carry the visible missile body. The third name is used by
+-- some variants; reading a property that does not exist simply fails.
+local COMPONENT_FIELDS = { 'StaticMesh', 'HiddenMissileMesh', 'MissileMesh' }
 
 local function valid(o)
     if o == nil then return false end
@@ -224,20 +246,36 @@ function M.apply_cdo(log)
         return 0, 0
     end
     local changed, checked = 0, 0
+
+    local function patch_class(cls)
+        if not valid(cls) then return end
+        local ok, cdo = pcall(function() return cls:GetCDO() end)
+        local obj = (ok and valid(cdo)) and cdo or cls
+        checked = checked + 1
+        changed = changed + swap_owner(obj, mesh)
+        local okE, ce = pcall(M.apply_effect, obj)
+        if okE then changed = changed + (ce or 0) end
+    end
+
     for _, path in ipairs(MSL_PATHS) do
         local cls = load_class(path)
-        if cls then
-            local ok, cdo = pcall(function() return cls:GetCDO() end)
-            local obj = (ok and valid(cdo)) and cdo or cls
-            checked = checked + 1
-            changed = changed + swap_owner(obj, mesh)
-            local okE, ce = pcall(M.apply_effect, obj)
-            if okE then changed = changed + (ce or 0) end
-
-        end
+        if cls then patch_class(cls) end
     end
+
+    -- One-off probe: other MSL visual variants used by other aircraft.
+    if not extra_tried then
+        extra_tried = true
+        for _, sfx in ipairs(EXTRA_SUFFIXES) do
+            local cls = load_class('/Game/Blueprints/Weapons/MSL/Player/Msl/BP_plwp_msl_' .. sfx)
+            if cls then extra_classes[#extra_classes + 1] = cls end
+        end
+        if log then log('VISUALS extra-variants found=' .. tostring(#extra_classes)) end
+    end
+    for _, cls in ipairs(extra_classes) do patch_class(cls) end
+
     if log and changed > 0 then
-        log('VISUALS cdo changed=' .. changed .. ' classes=' .. checked)
+        log('VISUALS cdo changed=' .. changed .. ' classes=' .. checked
+            .. ' extra=' .. tostring(#extra_classes))
     end
     return changed, checked
 end
@@ -254,23 +292,25 @@ function M.install_hooks(log)
         if log then log('VISUALS hook-unavailable') end
         return
     end
-    local wanted = {}
-    for _, c in ipairs(MSL_CLASSES) do wanted[c] = true end
-
     -- One missile actor: mesh + explosion references, both on the instance.
     local function on_actor(actor)
         if not valid(actor) then return end
         local full = name_of(actor)
         if not full then return end
         local leaf = leaf_of(full)
-        if not wanted[leaf] then return end
+        if not is_msl_leaf(leaf) then return end
         local mesh = get_mesh()
-        if mesh then pcall(swap_owner, actor, mesh) end
+        local changed = 0
+        if mesh then
+            local okS, n = pcall(swap_owner, actor, mesh)
+            if okS and type(n) == 'number' then changed = n end
+        end
         local okE, ce = pcall(M.apply_effect, actor)
-        if actorLogs < 5 then
+        if actorLogs < 8 then
             actorLogs = actorLogs + 1
             if log then
-                log('VISUALS actor ' .. leaf .. ' effect_changed=' .. tostring(okE and ce or 'ERR'))
+                log('VISUALS actor ' .. leaf .. ' changed=' .. tostring(changed)
+                    .. ' effect_changed=' .. tostring(okE and ce or 'ERR'))
             end
         end
     end
@@ -299,7 +339,7 @@ function M.install_hooks(log)
         end)
     end)
 
-    if log then log('VISUALS hooks installed for ' .. #MSL_CLASSES .. ' missile classes') end
+    if log then log('VISUALS hooks installed (any MSL variant, known=' .. #MSL_CLASSES .. ')') end
 end
 
 -- Used by the drift check: is the template still the bomb?
@@ -318,9 +358,6 @@ function M.sweep(log)
     local okAct, act = pcall(function() return pawn.PlayerWeaponActivator end)
     if not (okAct and valid(act)) then return 0 end
 
-    local wanted = {}
-    for _, c in ipairs(MSL_CLASSES) do wanted[c] = true end
-
     local changed = 0
     for _, field in ipairs({ 'SpawnedWeapons', 'ActiveWeapons' }) do
         local okArr, arr = pcall(function() return act[field] end)
@@ -331,7 +368,7 @@ function M.sweep(log)
                     local okW, w = pcall(function() return arr[i] end)
                     if okW and valid(w) then
                         local leaf = leaf_of(name_of(w) or '')
-                        if wanted[leaf] then
+                        if is_msl_leaf(leaf) then
                             local mesh = get_mesh()
                             if mesh then pcall(swap_owner, w, mesh) end
                             local okE, ce = pcall(M.apply_effect, w)
